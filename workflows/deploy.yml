@@ -1,0 +1,33 @@
+name: Deploy PowerShell Scripts
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+
+jobs:
+  deploy:
+    runs-on: windows-latest
+    environment: ${{ inputs.environment }}   # använder GitHub Environment
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set Environment Variables
+        run: |
+          if ($env:GITHUB_ENV -eq $null) { New-Item -ItemType File -Path $env:GITHUB_ENV }
+          echo "ENVIRONMENT=${{ inputs.environment }}" >> $env:GITHUB_ENV
+
+      - name: Run PowerShell Script based on environment
+        shell: pwsh
+        run: |
+          Write-Host "Deploying to environment: ${{ inputs.environment }}"
+
+          switch (${{ inputs.environment }}) {
+              "test"  { ./scripts/deploy-test.ps1 }
+              "stage" { ./scripts/deploy-stage.ps1 }
+              "prod"  { ./scripts/deploy-prod.ps1 }
+              default { Write-Error "Unknown environment: ${{ inputs.environment }}"; exit 1 }
+          }
