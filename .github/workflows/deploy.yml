@@ -27,6 +27,10 @@ jobs:
         run: |
           $scriptRoot = Join-Path $env:GITHUB_WORKSPACE "scripts"
 
+          # Lista filer för felsökning
+          Write-Host "Files in scripts folder:"
+          Get-ChildItem -Path $scriptRoot
+
           # Sätt execution policy för job session
           Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned -Force
 
@@ -42,9 +46,14 @@ jobs:
               Write-Host "Running test script: $scriptPath"
           }
 
-          # Unblock och kör skriptet
-          Unblock-File -Path $scriptPath
-          & $scriptPath
+          # Kontrollera att filen finns
+          if (Test-Path $scriptPath) {
+              Unblock-File -Path $scriptPath
+              & $scriptPath
+          } else {
+              Write-Error "Script not found: $scriptPath"
+              exit 1
+          }
         shell: pwsh
         env:
           environment: ${{ inputs.environment }}
