@@ -24,13 +24,13 @@ jobs:
         run: |
           if ($env:environment -eq "prod") {
             Write-Host "Running prod script"
-            ./scripts/prod.ps1
+            ./scripts/deploy-prod.ps1
           } elseif ($env:environment -eq "stage") {
             Write-Host "Running stage script"
-            ./scripts/stage.ps1
+            ./scripts/deploy-stage.ps1
           } else {
             Write-Host "Running test script"
-            ./scripts/test.ps1
+            ./scripts/deploy-test.ps1
           }
         shell: pwsh
         env:
