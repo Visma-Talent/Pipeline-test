@@ -14,22 +14,31 @@ jobs:
   run-powershell:
     runs-on: windows-latest
     steps:
-      # 1️⃣ Checkout repo
+      # 1️⃣ Checkout repo direkt i workspace root
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          path: .  # säkerställer att repot checkas ut direkt i GITHUB_WORKSPACE
 
       # 2️⃣ Print environment
       - name: Print environment
         run: echo "Environment is ${{ inputs.environment }}"
 
-      # 3️⃣ Run the correct PowerShell script
+      # 3️⃣ List repo contents för felsökning
+      - name: List repo root and scripts folder
+        run: |
+          Write-Host "GITHUB_WORKSPACE: $env:GITHUB_WORKSPACE"
+          Write-Host "Root folder contents:"
+          Get-ChildItem $env:GITHUB_WORKSPACE
+          Write-Host "Scripts folder contents:"
+          $scriptRoot = Join-Path $env:GITHUB_WORKSPACE "scripts"
+          Get-ChildItem $scriptRoot
+        shell: pwsh
+
+      # 4️⃣ Run the correct PowerShell script
       - name: Run PowerShell script
         run: |
           $scriptRoot = Join-Path $env:GITHUB_WORKSPACE "scripts"
-
-          # Lista filer för felsökning
-          Write-Host "Files in scripts folder:"
-          Get-ChildItem -Path $scriptRoot
 
           # Sätt execution policy för job session
           Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned -Force
