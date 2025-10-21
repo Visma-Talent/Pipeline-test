@@ -22,15 +22,20 @@ jobs:
 
       - name: Run PowerShell script
         run: |
+          $scriptRoot = Join-Path $env:GITHUB_WORKSPACE "scripts"
+
           if ($env:environment -eq "prod") {
-            Write-Host "Running prod script"
-              .\scripts\deploy-prod.ps1
+              $scriptPath = Join-Path $scriptRoot "deploy-prod.ps1"
+              Write-Host "Running prod script: $scriptPath"
+              & $scriptPath
           } elseif ($env:environment -eq "stage") {
-            Write-Host "Running stage script"
-              .\scripts\deploy-stage.ps1
+              $scriptPath = Join-Path $scriptRoot "deploy-stage.ps1"
+              Write-Host "Running stage script: $scriptPath"
+              & $scriptPath
           } else {
-            Write-Host "Running test script"
-              .\scripts\deploy-test.ps1
+              $scriptPath = Join-Path $scriptRoot "deploy-test.ps1"
+              Write-Host "Running test script: $scriptPath"
+              & $scriptPath
           }
         shell: pwsh
         env:
