@@ -1,25 +1,50 @@
-- name: Run PowerShell script
-  run: |
-    $scriptRoot = Join-Path $env:GITHUB_WORKSPACE "scripts"
+name: Deploy Workflow
 
-    # Sätt execution policy till RemoteSigned för job
-    Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned -Force
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+    secrets:
+      PIPELINE_TOKEN:
+        required: true
 
-    # Välj rätt script
-    if ($env:environment -eq "prod") {
-        $scriptPath = Join-Path $scriptRoot "deploy-prod.ps1"
-        Write-Host "Running prod script: $scriptPath"
-    } elseif ($env:environment -eq "stage") {
-        $scriptPath = Join-Path $scriptRoot "deploy-stage.ps1"
-        Write-Host "Running stage script: $scriptPath"
-    } else {
-        $scriptPath = Join-Path $scriptRoot "deploy-test.ps1"
-        Write-Host "Running test script: $scriptPath"
-    }
+jobs:
+  run-powershell:
+    runs-on: windows-latest
+    steps:
+      # 1️⃣ Checkout repo
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    # Unblock och kör
-    Unblock-File -Path $scriptPath
-    & $scriptPath
-  shell: pwsh
-  env:
-    environment: ${{ inputs.environment }}
+      # 2️⃣ Print environment
+      - name: Print environment
+        run: echo "Environment is ${{ inputs.environment }}"
+
+      # 3️⃣ Run the correct PowerShell script
+      - name: Run PowerShell script
+        run: |
+          $scriptRoot = Join-Path $env:GITHUB_WORKSPACE "scripts"
+
+          # Sätt execution policy för job session
+          Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned -Force
+
+          # Välj script baserat på environment
+          if ($env:environment -eq "prod") {
+              $scriptPath = Join-Path $scriptRoot "deploy-prod.ps1"
+              Write-Host "Running prod script: $scriptPath"
+          } elseif ($env:environment -eq "stage") {
+              $scriptPath = Join-Path $scriptRoot "deploy-stage.ps1"
+              Write-Host "Running stage script: $scriptPath"
+          } else {
+              $scriptPath = Join-Path $scriptRoot "deploy-test.ps1"
+              Write-Host "Running test script: $scriptPath"
+          }
+
+          # Unblock och kör skriptet
+          Unblock-File -Path $scriptPath
+          & $scriptPath
+        shell: pwsh
+        env:
+          environment: ${{ inputs.environment }}
