@@ -1,42 +1,25 @@
-name: Deploy Workflow
+- name: Run PowerShell script
+  run: |
+    $scriptRoot = Join-Path $env:GITHUB_WORKSPACE "scripts"
 
-on:
-  workflow_call:
-    inputs:
-      environment:
-        required: true
-        type: string
-    secrets:
-      PIPELINE_TOKEN:
-        required: true
+    # Sätt execution policy till RemoteSigned för job
+    Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned -Force
 
-jobs:
-  run-powershell:
-    runs-on: windows-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+    # Välj rätt script
+    if ($env:environment -eq "prod") {
+        $scriptPath = Join-Path $scriptRoot "deploy-prod.ps1"
+        Write-Host "Running prod script: $scriptPath"
+    } elseif ($env:environment -eq "stage") {
+        $scriptPath = Join-Path $scriptRoot "deploy-stage.ps1"
+        Write-Host "Running stage script: $scriptPath"
+    } else {
+        $scriptPath = Join-Path $scriptRoot "deploy-test.ps1"
+        Write-Host "Running test script: $scriptPath"
+    }
 
-      - name: Print environment
-        run: echo "Environment is ${{ inputs.environment }}"
-
-      - name: Run PowerShell script
-        run: |
-          $scriptRoot = Join-Path $env:GITHUB_WORKSPACE "scripts"
-
-          if ($env:environment -eq "prod") {
-              $scriptPath = Join-Path $scriptRoot "deploy-prod.ps1"
-              Write-Host "Running prod script: $scriptPath"
-              & $scriptPath
-          } elseif ($env:environment -eq "stage") {
-              $scriptPath = Join-Path $scriptRoot "deploy-stage.ps1"
-              Write-Host "Running stage script: $scriptPath"
-              & $scriptPath
-          } else {
-              $scriptPath = Join-Path $scriptRoot "deploy-test.ps1"
-              Write-Host "Running test script: $scriptPath"
-              & $scriptPath
-          }
-        shell: pwsh
-        env:
-          environment: ${{ inputs.environment }}
+    # Unblock och kör
+    Unblock-File -Path $scriptPath
+    & $scriptPath
+  shell: pwsh
+  env:
+    environment: ${{ inputs.environment }}
