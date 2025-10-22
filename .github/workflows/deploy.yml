@@ -14,29 +14,17 @@ jobs:
   run-powershell:
     runs-on: windows-latest
     steps:
-      # 1️⃣ Checkout repo direkt i workspace root
-      - name: Checkout code
+      # 1️⃣ Checkout pipeline-repot (där skripten finns)
+      - name: Checkout pipeline repository
         uses: actions/checkout@v4
-        with:
-          path: .  # säkerställer att repot checkas ut direkt i GITHUB_WORKSPACE
 
-      # 2️⃣ Print environment
+      # 2️⃣ Skriv ut vilket environment som körs
       - name: Print environment
         run: echo "Environment is ${{ inputs.environment }}"
 
-      # 3️⃣ List repo contents för felsökning
-      - name: List repo root and scripts folder
-        run: |
-          Write-Host "GITHUB_WORKSPACE: $env:GITHUB_WORKSPACE"
-          Write-Host "Root folder contents:"
-          Get-ChildItem $env:GITHUB_WORKSPACE
-          Write-Host "Scripts folder contents:"
-          $scriptRoot = Join-Path $env:GITHUB_WORKSPACE "scripts"
-          Get-ChildItem $scriptRoot
-        shell: pwsh
-
-      # 4️⃣ Run the correct PowerShell script
+      # 3️⃣ Kör rätt PowerShell-script baserat på environment
       - name: Run PowerShell script
+        shell: pwsh
         run: |
           $scriptRoot = Join-Path $env:GITHUB_WORKSPACE "scripts"
 
@@ -44,10 +32,10 @@ jobs:
           Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned -Force
 
           # Välj script baserat på environment
-          if ($env:environment -eq "prod") {
+          if ("${{ inputs.environment }}" -eq "prod") {
               $scriptPath = Join-Path $scriptRoot "deploy-prod.ps1"
               Write-Host "Running prod script: $scriptPath"
-          } elseif ($env:environment -eq "stage") {
+          } elseif ("${{ inputs.environment }}" -eq "stage") {
               $scriptPath = Join-Path $scriptRoot "deploy-stage.ps1"
               Write-Host "Running stage script: $scriptPath"
           } else {
@@ -56,13 +44,11 @@ jobs:
           }
 
           # Kontrollera att filen finns
-          if (Test-Path $scriptPath) {
-              Unblock-File -Path $scriptPath
-              & $scriptPath
-          } else {
+          if (-Not (Test-Path $scriptPath)) {
               Write-Error "Script not found: $scriptPath"
               exit 1
           }
-        shell: pwsh
-        env:
-          environment: ${{ inputs.environment }}
+
+          # Avblockera och kör
+          Unblock-File -Path $scriptPath
+          & $scriptPath
