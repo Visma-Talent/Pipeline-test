@@ -14,7 +14,7 @@ jobs:
   run-powershell:
     runs-on: windows-latest
     steps:
-      # 1️⃣ Checkout pipeline-repot (där skripten finns)
+      # 1️⃣ Checkout pipeline-repot (det repo som innehåller skripten)
       - name: Checkout pipeline repository
         uses: actions/checkout@v4
 
@@ -28,10 +28,8 @@ jobs:
         run: |
           $scriptRoot = Join-Path $env:GITHUB_WORKSPACE "scripts"
 
-          # Sätt execution policy för job session
           Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned -Force
 
-          # Välj script baserat på environment
           if ("${{ inputs.environment }}" -eq "prod") {
               $scriptPath = Join-Path $scriptRoot "deploy-prod.ps1"
               Write-Host "Running prod script: $scriptPath"
@@ -43,12 +41,10 @@ jobs:
               Write-Host "Running test script: $scriptPath"
           }
 
-          # Kontrollera att filen finns
           if (-Not (Test-Path $scriptPath)) {
-              Write-Error "Script not found: $scriptPath"
+              Write-Error "❌ Script not found: $scriptPath"
               exit 1
           }
 
-          # Avblockera och kör
           Unblock-File -Path $scriptPath
           & $scriptPath
