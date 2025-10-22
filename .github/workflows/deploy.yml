@@ -14,22 +14,35 @@ jobs:
   run-powershell:
     runs-on: windows-latest
     steps:
-      # 1️⃣ Checkout pipeline-repot (det repo som innehåller skripten)
+      # 1️⃣ Checkout pipeline repo (där skripten finns)
       - name: Checkout pipeline repository
         uses: actions/checkout@v4
+        with:
+          repository: Visma-Talent/Pipeline-test  # pipeline-repot
+          token: ${{ secrets.PIPELINE_TOKEN }}    # secret med read-access till pipeline-repo
+          path: pipeline                          # checkout i en separat mapp
 
-      # 2️⃣ Skriv ut vilket environment som körs
+      # 2️⃣ Debug: lista innehållet i workspace
+      - name: Debug workspace
+        shell: pwsh
+        run: |
+          Write-Host "Workspace: $env:GITHUB_WORKSPACE"
+          Get-ChildItem -Recurse "pipeline"
+
+      # 3️⃣ Skriv ut vilket environment som körs
       - name: Print environment
         run: echo "Environment is ${{ inputs.environment }}"
 
-      # 3️⃣ Kör rätt PowerShell-script baserat på environment
+      # 4️⃣ Kör rätt PowerShell-script baserat på environment
       - name: Run PowerShell script
         shell: pwsh
         run: |
-          $scriptRoot = Join-Path $env:GITHUB_WORKSPACE "scripts"
+          $scriptRoot = Join-Path $env:GITHUB_WORKSPACE "pipeline/scripts"
 
+          # Sätt execution policy för job session
           Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned -Force
 
+          # Välj script baserat på environment
           if ("${{ inputs.environment }}" -eq "prod") {
               $scriptPath = Join-Path $scriptRoot "deploy-prod.ps1"
               Write-Host "Running prod script: $scriptPath"
@@ -41,10 +54,6 @@ jobs:
               Write-Host "Running test script: $scriptPath"
           }
 
+          # Kontrollera att filen finns
           if (-Not (Test-Path $scriptPath)) {
-              Write-Error "❌ Script not found: $scriptPath"
-              exit 1
-          }
-
-          Unblock-File -Path $scriptPath
-          & $scriptPath
+              Write-Error "❌
