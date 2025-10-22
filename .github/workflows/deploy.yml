@@ -56,4 +56,10 @@ jobs:
 
           # Kontrollera att filen finns
           if (-Not (Test-Path $scriptPath)) {
-              Write-Error "❌
+              Write-Error "❌ Script not found: $scriptPath"
+              exit 1
+          }
+
+          # Avblockera och kör
+          Unblock-File -Path $scriptPath
+          & $scriptPath
